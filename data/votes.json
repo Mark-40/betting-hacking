@@ -1,22 +1,22 @@
 {
   "isOpen": true,
   "totalVotes": 3,
-  "updatedAt": "2026-05-22T04:19:09.683Z",
+  "updatedAt": "2026-05-22T04:40:37.300Z",
   "votes": {
     "innovative": {
-      "team-nova": 0,
-      "team-quantum": 1,
-      "team-orbit": 0
+      "team-lonely": 1,
+      "team-office": 0,
+      "team-conference": 0
     },
     "organized": {
-      "team-nova": 0,
-      "team-quantum": 0,
-      "team-orbit": 1
+      "team-lonely": 0,
+      "team-office": 1,
+      "team-conference": 0
     },
     "pitch": {
-      "team-nova": 1,
-      "team-quantum": 0,
-      "team-orbit": 0
+      "team-lonely": 0,
+      "team-office": 1,
+      "team-conference": 0
     }
   }
 }
