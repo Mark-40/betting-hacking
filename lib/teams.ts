@@ -15,7 +15,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "pitch",
-    label: "Best Pitch",
+    label: "Who do you think will win the Best Pitch?",
     tagline: "Smoothest delivery, sharpest story, sold us in 60s.",
     accent: "magenta",
   },
