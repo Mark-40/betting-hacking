@@ -1,0 +1,22 @@
+{
+  "isOpen": true,
+  "totalVotes": 3,
+  "updatedAt": "2026-05-22T04:19:09.683Z",
+  "votes": {
+    "innovative": {
+      "team-nova": 0,
+      "team-quantum": 1,
+      "team-orbit": 0
+    },
+    "organized": {
+      "team-nova": 0,
+      "team-quantum": 0,
+      "team-orbit": 1
+    },
+    "pitch": {
+      "team-nova": 1,
+      "team-quantum": 0,
+      "team-orbit": 0
+    }
+  }
+}
