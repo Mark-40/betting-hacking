@@ -33,7 +33,10 @@ export default function Ticker({ votes, signals }: Props) {
       const sig = signals[c.id as CategoryId]?.[t.id];
       rows.push({
         key: `${c.id}:${t.id}`,
-        category: c.label.replace("Who do you think will win the ", "").replace("?", ""),
+        category: c.label
+          .replace(/^Who will win the\s+/i, "")
+          .replace(/^Who do you think will win the\s+/i, "")
+          .replace(/\?$/, ""),
         team: t.name.split(" - ")[0] ?? t.name,
         emoji: t.emoji,
         count,

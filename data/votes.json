@@ -1,21 +1,21 @@
 {
   "isOpen": true,
-  "totalVotes": 3,
-  "updatedAt": "2026-05-22T05:48:53.497Z",
+  "totalVotes": 0,
+  "updatedAt": "2026-05-22T06:15:25.346Z",
   "votes": {
     "innovative": {
       "team-lonely": 0,
-      "team-office": 1,
+      "team-office": 0,
       "team-conference": 0
     },
     "organized": {
-      "team-lonely": 1,
+      "team-lonely": 0,
       "team-office": 0,
       "team-conference": 0
     },
     "pitch": {
       "team-lonely": 0,
-      "team-office": 1,
+      "team-office": 0,
       "team-conference": 0
     }
   }

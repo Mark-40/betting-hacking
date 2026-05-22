@@ -36,7 +36,10 @@ const ACCENT_DOT: Record<string, string> = {
 };
 
 function shortLabel(label: string) {
-  return label.replace(/^Who do you think will win the\s+/i, "").replace(/\?$/, "");
+  return label
+    .replace(/^Who will win the\s+/i, "")
+    .replace(/^Who do you think will win the\s+/i, "")
+    .replace(/\?$/, "");
 }
 
 export default function Leaderboard({ votes, signals }: Props) {

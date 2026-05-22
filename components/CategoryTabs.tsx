@@ -33,8 +33,11 @@ const ACTIVE_GLOW: Record<Category["accent"], string> = {
 };
 
 function shortLabel(label: string) {
-  // strip lead-in question phrasing if present
-  return label.replace(/^Who do you think will win the\s+/i, "").replace(/\?$/, "");
+  // strip lead-in phrasing for compact contexts
+  return label
+    .replace(/^Who will win the\s+/i, "")
+    .replace(/^Who do you think will win the\s+/i, "")
+    .replace(/\?$/, "");
 }
 
 export default function CategoryTabs({
@@ -94,7 +97,7 @@ export default function CategoryTabs({
               transition={{ duration: 0.25 }}
               className="font-display text-2xl font-semibold leading-tight tracking-tightest text-white sm:text-3xl"
             >
-              {shortLabel(activeCat.label)}
+              {activeCat.label}
             </motion.h2>
           </AnimatePresence>
           <p className="max-w-md text-[13px] leading-relaxed text-white/55">

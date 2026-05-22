@@ -3,19 +3,19 @@ import type { Category, Team } from "./types";
 export const CATEGORIES: Category[] = [
   {
     id: "innovative",
-    label: "Most Innovative",
+    label: "Who will win the Most Innovative",
     tagline: "Boldest idea, freshest tech, biggest 'whoa'.",
     accent: "violet",
   },
   {
     id: "organized",
-    label: "Most Organized",
+    label: "Who will win the Most Organized",
     tagline: "Tightest plan, cleanest execution, zero chaos.",
     accent: "cyan",
   },
   {
     id: "pitch",
-    label: "Who do you think will win the Best Pitch?",
+    label: "Who will win the Best Pitch",
     tagline: "Smoothest delivery, sharpest story, sold us in 60s.",
     accent: "magenta",
   },

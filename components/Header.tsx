@@ -45,14 +45,7 @@ export default function Header({ isOpen, totalVotes, variant = "voter" }: Header
             <span className="h-6 w-px bg-white/8" />
           </div>
           <StatusBadge isOpen={isOpen} />
-          {variant === "voter" ? (
-            <Link
-              href="/admin"
-              className="hidden rounded-md border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-white/65 transition hover:border-white/30 hover:text-white sm:inline-block"
-            >
-              Admin
-            </Link>
-          ) : (
+          {variant === "admin" && (
             <Link
               href="/"
               className="rounded-md border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-white/65 transition hover:border-white/30 hover:text-white"

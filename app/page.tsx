@@ -215,8 +215,9 @@ export default function VotingPage() {
                       <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.2em] text-white/45">
                         <span className={`h-1 w-1 rounded-full ${dot}`} />
                         {c.label
-                          .replace("Who do you think will win the ", "")
-                          .replace("?", "")
+                          .replace(/^Who will win the\s+/i, "")
+                          .replace(/^Who do you think will win the\s+/i, "")
+                          .replace(/\?$/, "")
                           .split(" ")
                           .slice(-1)}
                       </span>

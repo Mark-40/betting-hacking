@@ -204,8 +204,9 @@ export default function AdminPage() {
                     <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-white/40">
                       <span className={`h-1 w-1 rounded-full ${dot}`} />
                       {c.label
-                        .replace("Who do you think will win the ", "")
-                        .replace("?", "")
+                        .replace(/^Who will win the\s+/i, "")
+                        .replace(/^Who do you think will win the\s+/i, "")
+                        .replace(/\?$/, "")
                         .split(" ")
                         .slice(-1)}
                     </div>
