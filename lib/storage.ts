@@ -5,6 +5,26 @@ import type { CategoryId, VoteCounts, VotesData } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const VOTES_FILE = path.join(DATA_DIR, "votes.json");
+const TMP_FILE = VOTES_FILE + ".tmp";
+
+/**
+ * Persist the in-memory snapshot on globalThis so it survives Next.js dev-mode
+ * module reloads (HMR). Writing to data/votes.json triggers the file watcher,
+ * which would otherwise blow away a module-scoped `let memoryStore = null`.
+ */
+const GLOBAL_KEY = "__hackvote_store_v1__";
+
+type Globals = {
+  [GLOBAL_KEY]?: VotesData;
+};
+const g = globalThis as unknown as Globals;
+
+function getMem(): VotesData | undefined {
+  return g[GLOBAL_KEY];
+}
+function setMem(s: VotesData) {
+  g[GLOBAL_KEY] = s;
+}
 
 function emptyCounts(): VoteCounts {
   const counts = {} as VoteCounts;
@@ -32,62 +52,107 @@ function ensureDir() {
   }
 }
 
-// Fallback in-memory store for serverless/read-only filesystems (e.g. Vercel prod).
-let memoryStore: VotesData | null = null;
+function normalize(parsed: Partial<VotesData> | null | undefined): VotesData {
+  const base = defaultState();
+  if (!parsed) return base;
+  for (const cat of CATEGORY_IDS) {
+    const c = cat as CategoryId;
+    base.votes[c] = { ...base.votes[c], ...(parsed.votes?.[c] ?? {}) };
+  }
+  return {
+    isOpen: Boolean(parsed.isOpen),
+    votes: base.votes,
+    totalVotes:
+      typeof parsed.totalVotes === "number"
+        ? parsed.totalVotes
+        : recomputeTotal(base.votes),
+    updatedAt: parsed.updatedAt ?? new Date().toISOString(),
+  };
+}
 
-function tryWrite(state: VotesData): boolean {
+function recomputeTotal(votes: VoteCounts): number {
+  let n = 0;
+  for (const c of CATEGORY_IDS) {
+    for (const t of TEAM_IDS) {
+      n += votes[c as CategoryId]?.[t] ?? 0;
+    }
+  }
+  return n;
+}
+
+function readFromFile(): VotesData | null {
+  try {
+    if (!fs.existsSync(VOTES_FILE)) return null;
+    const raw = fs.readFileSync(VOTES_FILE, "utf-8");
+    if (!raw.trim()) return null;
+    const parsed = JSON.parse(raw) as Partial<VotesData>;
+    return normalize(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function writeToFile(state: VotesData): boolean {
   try {
     ensureDir();
-    fs.writeFileSync(VOTES_FILE, JSON.stringify(state, null, 2), "utf-8");
+    // Atomic write: write to .tmp then rename, so a partial/aborted write
+    // never leaves an empty or half-written votes.json on disk.
+    fs.writeFileSync(TMP_FILE, JSON.stringify(state, null, 2), "utf-8");
+    fs.renameSync(TMP_FILE, VOTES_FILE);
     return true;
   } catch {
+    // Cleanup orphan tmp if rename failed
+    try {
+      if (fs.existsSync(TMP_FILE)) fs.unlinkSync(TMP_FILE);
+    } catch {
+      /* ignore */
+    }
     return false;
   }
 }
 
-export function readState(): VotesData {
-  if (memoryStore) return memoryStore;
-  try {
-    ensureDir();
-    if (!fs.existsSync(VOTES_FILE)) {
-      const initial = defaultState();
-      tryWrite(initial);
-      memoryStore = initial;
-      return initial;
-    }
-    const raw = fs.readFileSync(VOTES_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as VotesData;
-    // self-heal: ensure all category/team keys exist
-    const base = defaultState();
-    for (const cat of CATEGORY_IDS) {
-      const c = cat as CategoryId;
-      base.votes[c] = { ...base.votes[c], ...(parsed.votes?.[c] ?? {}) };
-    }
-    const healed: VotesData = {
-      isOpen: Boolean(parsed.isOpen),
-      votes: base.votes,
-      totalVotes: parsed.totalVotes ?? 0,
-      updatedAt: parsed.updatedAt ?? new Date().toISOString(),
-    };
-    memoryStore = healed;
-    return healed;
-  } catch {
-    const initial = defaultState();
-    memoryStore = initial;
-    return initial;
+/**
+ * Pick the most-trusted snapshot from memory + disk.
+ * The one with the higher totalVotes (or newer updatedAt) wins — this protects
+ * against the dev-mode case where memory was reset to null but disk still has
+ * the latest writes, or vice-versa.
+ */
+function bestOf(a: VotesData | undefined, b: VotesData | null): VotesData | null {
+  if (!a && !b) return null;
+  if (!a) return b;
+  if (!b) return a;
+  if (a.totalVotes !== b.totalVotes) {
+    return a.totalVotes > b.totalVotes ? a : b;
   }
+  return new Date(a.updatedAt) >= new Date(b.updatedAt) ? a : b;
+}
+
+export function readState(): VotesData {
+  const mem = getMem();
+  const file = readFromFile();
+  const merged = bestOf(mem, file) ?? defaultState();
+
+  // Keep both stores in sync with the chosen snapshot.
+  setMem(merged);
+  if (!file || file.updatedAt !== merged.updatedAt) {
+    writeToFile(merged);
+  }
+  return merged;
 }
 
 export function writeState(state: VotesData): VotesData {
-  state.updatedAt = new Date().toISOString();
-  memoryStore = state;
-  tryWrite(state); // best-effort persistence
-  return state;
+  const next: VotesData = {
+    ...state,
+    totalVotes: recomputeTotal(state.votes),
+    updatedAt: new Date().toISOString(),
+  };
+  setMem(next);
+  writeToFile(next);
+  return next;
 }
 
 export function updateState(mutator: (s: VotesData) => VotesData | void): VotesData {
   const current = readState();
-  // shallow clone deep enough for our shape
   const next: VotesData = {
     isOpen: current.isOpen,
     totalVotes: current.totalVotes,
