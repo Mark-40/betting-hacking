@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { resetVotes } from "@/lib/storage";
+import { resetAll } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const state = resetVotes();
+  const state = await resetAll();
   return NextResponse.json(state);
 }

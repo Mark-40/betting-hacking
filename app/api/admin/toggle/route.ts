@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateState } from "@/lib/storage";
+import { setOpen, toggleOpen } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -8,16 +8,13 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    // empty body == toggle current
+    // empty body = flip current
   }
 
-  const updated = updateState((s) => {
-    if (typeof body.isOpen === "boolean") {
-      s.isOpen = body.isOpen;
-    } else {
-      s.isOpen = !s.isOpen;
-    }
-  });
+  const updated =
+    typeof body.isOpen === "boolean"
+      ? await setOpen(body.isOpen)
+      : await toggleOpen();
 
   return NextResponse.json(updated);
 }

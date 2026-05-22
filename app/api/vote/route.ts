@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readState, updateState } from "@/lib/storage";
+import { getState, incrementVote } from "@/lib/storage";
 import { CATEGORY_IDS, TEAM_IDS } from "@/lib/teams";
 import type { CategoryId } from "@/lib/types";
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unknown teamId" }, { status: 400 });
   }
 
-  const current = readState();
+  const current = await getState();
   if (!current.isOpen) {
     return NextResponse.json(
       { error: "Voting is currently closed." },
@@ -38,11 +38,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const updated = updateState((s) => {
-    const cat = categoryId as CategoryId;
-    s.votes[cat][teamId] = (s.votes[cat][teamId] ?? 0) + 1;
-    s.totalVotes += 1;
-  });
-
+  const updated = await incrementVote(categoryId as CategoryId, teamId);
   return NextResponse.json(updated);
 }

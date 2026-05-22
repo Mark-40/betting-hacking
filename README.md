@@ -169,33 +169,75 @@ Edit `lib/teams.ts → CATEGORIES`. If you change the `id`s, update `types.ts �
 
 ---
 
+## Persistence
+
+The storage layer (`lib/storage.ts`) is a small facade with two backends:
+
+| Backend | When it activates | Notes |
+|---|---|---|
+| **Vercel KV** | When `KV_REST_API_URL` + `KV_REST_API_TOKEN` env vars are set | Atomic `INCR` per vote → no race conditions, survives cold starts |
+| **Local JSON file** | Anything else | `data/votes.json` + in-memory mirror on `globalThis`. Good enough for local dev. |
+
+No code changes are needed to switch — just add the env vars.
+
 ## Deploying to Vercel
 
-1. Push to GitHub.
-2. Go to [vercel.com/new](https://vercel.com/new), import the repo.
-3. Framework preset auto-detects **Next.js**. No env vars required.
-4. Deploy.
+### 1. Push to GitHub & import to Vercel
 
-### About JSON persistence on Vercel
+[vercel.com/new](https://vercel.com/new) → import the repo. Framework preset auto-detects **Next.js**.
 
-Vercel's serverless filesystem is **read-only** at runtime, and each invocation may land on a different cold function — so `data/votes.json` is **not** durable across restarts in production. `storage.ts` is built to handle that gracefully:
+### 2. Add a KV store
 
-- On boot it reads the seeded `data/votes.json` (your starting state).
-- All mutations are kept in an **in-memory store** that survives for the life of a warm function instance.
-- File writes are attempted but failures are swallowed.
+In your Vercel project dashboard:
 
-**Recommendation for a real event:** run on a single long-lived host (one Vercel function will typically stay warm during a 60-min voting window), or swap `storage.ts` for Upstash Redis / Vercel KV — the interface (`readState` / `updateState` / `resetVotes`) is the only thing the rest of the app touches.
+1. Go to **Storage** → **Create Database** → **KV**.
+2. Name it (e.g. `hackvote-kv`).
+3. Vercel will auto-link it to your project and inject these env vars:
+   - `KV_URL`
+   - `KV_REST_API_URL`
+   - `KV_REST_API_TOKEN`
+   - `KV_REST_API_READ_ONLY_TOKEN`
+4. Trigger a redeploy. That's it — voting counts now persist across cold starts and restarts.
 
-### One-host alternative
+### 3. (Optional) Use KV in local dev
 
-If you want guaranteed persistence with this exact code:
+If you want the same backend locally:
+
+```bash
+npm i -g vercel
+vercel link            # link this folder to your Vercel project
+vercel env pull .env.local   # pulls KV_* env vars into .env.local
+npm run dev
+```
+
+Without that step, dev uses the local JSON file (with the globalThis-backed in-memory mirror that survives HMR reloads).
+
+### How the KV schema looks
+
+For curiosity / debugging — the keyspace is tiny:
+
+```
+hackvote:isOpen                       → boolean
+hackvote:updatedAt                    → ISO timestamp string
+hackvote:votes:innovative:team-lonely → counter (INCR)
+hackvote:votes:innovative:team-office → counter (INCR)
+hackvote:votes:innovative:team-conference → counter (INCR)
+hackvote:votes:organized:team-lonely  → counter (INCR)
+... 9 cells total
+```
+
+Each vote does an atomic `INCR` on one counter + a `SET` on `updatedAt`. No transactions needed — there's no read-modify-write race because the increment itself is the only mutation.
+
+### One-host alternative (no KV)
+
+If you'd rather not use KV — run this exact code on any node host (Railway, Fly, Render, a VPS):
 
 ```bash
 npm run build
 npm run start
 ```
 
-…on any node host (Railway, Fly, Render, a VPS). Disk writes will succeed and `data/votes.json` will persist across restarts.
+Without the `KV_REST_API_URL` env var present, the file backend takes over and `data/votes.json` persists across restarts.
 
 ---
 
